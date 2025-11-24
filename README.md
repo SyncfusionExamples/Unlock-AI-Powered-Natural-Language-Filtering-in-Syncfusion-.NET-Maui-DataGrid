@@ -1,8 +1,3 @@
-# AI-driven-Natural-Language-Filtering-in-.NET-MAUI-DataGrid
-This demo shows how to showcase AI driven Natural Language Filtering in .NET MAUI DataGrid.
-
-***
-
 # **AI-Driven Natural Language Filtering in .NET MAUI DataGrid**
 
 **Meta Title:** AI-Driven Natural Language Filtering in .NET MAUI DataGrid | Smart Data Interaction  
@@ -180,6 +175,3 @@ public Predicate<object>? BuildPredicate()
 Thanks for reading! In this blog, we’ve seen how to implement **AI-driven Natural Language Filtering** in .NET MAUI DataGrid. Check out our Release Notes and What’s New pages to see the other updates in this release and leave your feedback in the comments section below. 
 For current Syncfusion customers, the newest version of Essential Studio is available from the license and downloads page. If you are not yet a customer, you can try our 30-day free trial to check out these new features. 
 For questions, you can contact us through our support forums, feedback portal, or support portal. We are always happy to assist you!
-
-
-***
