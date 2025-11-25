@@ -1,11 +1,6 @@
 # **AI-Driven Natural Language Filtering in .NET MAUI DataGrid**
 
-**Meta Title:** AI-Driven Natural Language Filtering in .NET MAUI DataGrid | Smart Data Interaction  
-**Meta Description:** Learn how to implement AI-powered natural language filtering in .NET MAUI DataGrid using Azure OpenAI and Syncfusion controls. Enable intuitive, conversational filtering across Android, iOS, Windows, and macOS.  
-**Keywords:** .NET MAUI DataGrid, AI Filtering, Natural Language Processing, Syncfusion MAUI DataGrid, Azure OpenAI, Semantic Kernel, Cross-Platform DataGrid, Smart Filtering  
-**Author:** Shalini Suresh
-
-***
+This demo shows how to showcase AI-Driven Natural Language Filtering in .NET MAUI DataGrid.
 
 ## **Introduction**
 
@@ -125,7 +120,7 @@ private async Task ExecuteAsync()
 
 ***
 
-## **Step 4: AI Service (`AiFilterService.cs`)**
+## **Step 4: AI Service (`AIFilterService.cs`)**
 
 *   Sends prompt to OpenAI/Azure OpenAI with schema instructions.
 *   Receives JSON filter plan like:
@@ -150,7 +145,57 @@ private async Task ExecuteAsync()
 
 ***
 
-## **Step 5: Apply Filter**
+## **Step 5: Bind XAML**
+
+```xml
+<Grid RowDefinitions="Auto, *" Padding="10">
+    <Grid ColumnDefinitions="*, Auto, Auto" ColumnSpacing="10">
+        <input:SfComboBox
+            x:Name="PromptCombo"
+            ItemsSource="{Binding PromptSuggestions}"
+            SelectedItem="{Binding SelectedSuggestion}"
+            Text="{Binding Prompt, Mode=TwoWay}"
+            IsEditable="True"
+            Placeholder="Ask AI to apply filter to SfDataGrid"
+            MaxDropDownHeight="260"
+            HeightRequest="40" />
+
+        <Button Grid.Column="1" Text="Execute Prompt"
+                Command="{Binding ExecutePromptCommand}" />
+        <Button Grid.Column="2" Text="Reset"
+                Command="{Binding ResetCommand}" />
+    </Grid>
+
+    <sfgrid:SfDataGrid x:Name="DataGrid"
+                       Grid.Row="1" RowHeight="50"
+                       ColumnWidthMode="Fill"
+                       GridLinesVisibility="Both"
+                       HeaderGridLinesVisibility="Both"
+                       ItemsSource="{Binding Employees}"
+                       SortingMode="Multiple">
+        <sfgrid:SfDataGrid.Columns>
+            <sfgrid:DataGridNumericColumn MappingName="EmployeeId" HeaderText="Employee ID" />
+            <sfgrid:DataGridTextColumn MappingName="Name" />
+            <sfgrid:DataGridTextColumn MappingName="Title" />
+            <sfgrid:DataGridNumericColumn MappingName="Rating" />
+            <sfgrid:DataGridDateColumn MappingName="BirthDate" Format="d" />
+            <sfgrid:DataGridTextColumn MappingName="Gender" />
+            <sfgrid:DataGridNumericColumn MappingName="Salary" Format="$#,0.00" />
+        </sfgrid:SfDataGrid.Columns>
+    </sfgrid:SfDataGrid>
+</Grid>
+```
+
+---
+
+### How It Works
+- **SfComboBox**: Allows users to enter natural language prompts or select suggestions.
+- **Execute Prompt Button**: Sends the query to AI service for processing.
+- **Reset Button**: Clears applied filters.
+- **SfDataGrid**: Displays filtered data dynamically based on AI-generated predicates.
+
+
+## **Step 6: Apply Filter**
 
 `BuildPredicate()` converts `FilterPlan` into a predicate:
 
@@ -170,8 +215,11 @@ public Predicate<object>? BuildPredicate()
 
 ***
 
+![AIFiltering in DataGrid](AIFiltering.gif)
+
 ## **Conclusion**
 
-Thanks for reading! In this blog, we’ve seen how to implement **AI-driven Natural Language Filtering** in .NET MAUI DataGrid. Check out our Release Notes and What’s New pages to see the other updates in this release and leave your feedback in the comments section below. 
-For current Syncfusion customers, the newest version of Essential Studio is available from the license and downloads page. If you are not yet a customer, you can try our 30-day free trial to check out these new features. 
-For questions, you can contact us through our support forums, feedback portal, or support portal. We are always happy to assist you!
+ Thanks for reading! In this blog, we’ve seen how to showcase bulk editing in [.NET MAUI DataGrid](https://www.syncfusion.com/maui-controls/maui-datagrid). Check out our Release Notes[https://www.syncfusion.com/products/release-history] and [What’s New pages](https://www.syncfusion.com/products/whatsnew) to see the other updates in this release and leave your feedback in the comments section below. 
+ For current Syncfusion customers, the newest version of Essential Studio is available from the [license and downloads page](https://www.syncfusion.com/Account/Login?ReturnUrl=%2faccount%2fdownloads). If you are not yet a customer, you can try our 30-day free [trial](https://www.syncfusion.com/downloads) to check out these new features. 
+ For questions, you can contact us through our support [forums](https://www.syncfusion.com/forums), [feedback portal](https://www.syncfusion.com/feedback), or support [portal](https://support.syncfusion.com/). We are always happy to assist you!
+
