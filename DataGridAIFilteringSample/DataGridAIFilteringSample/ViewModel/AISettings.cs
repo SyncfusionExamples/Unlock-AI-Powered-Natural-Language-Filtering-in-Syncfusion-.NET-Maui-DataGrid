@@ -7,36 +7,99 @@ using System.Text.RegularExpressions;
 
 namespace DataGridAIFilteringSample;
 
-public enum AiProvider { OpenAI, AzureOpenAI, Local }
 
+/// <summary>
+/// Specifies the AI provider options available for integration.
+/// </summary>
+public enum AiProvider
+{
+    /// <summary>
+    /// Use OpenAI as the AI provider.
+    /// </summary>
+    OpenAI,
+
+    /// <summary>
+    /// Use Azure OpenAI as the AI provider.
+    /// </summary>
+    AzureOpenAI,
+
+    /// <summary>
+    /// Use a local AI implementation.
+    /// </summary>
+    Local
+}
+
+/// <summary>
+/// Represents configuration settings for AI integration in the application.
+/// </summary>
 public class AiSettings
 {
+    /// <summary>
+    /// Gets or sets the AI provider to use (OpenAI, AzureOpenAI, or Local).
+    /// </summary>
     public AiProvider Provider { get; set; } = AiProvider.Local;
 
-    // OpenAI (api.openai.com)
+    /// <summary>
+    /// Gets or sets the API key for OpenAI services.
+    /// </summary>
     public string? OpenAiApiKey { get; set; }
+
+    /// <summary>
+    /// Gets or sets the OpenAI model name (e.g., gpt-4o-mini).
+    /// </summary>
     public string OpenAiModel { get; set; } = "gpt-4o-mini";
 
-    // Azure OpenAI
+    /// <summary>
+    /// Gets or sets the Azure OpenAI endpoint URL.
+    /// </summary>
     public string? AzureEndpoint { get; set; }
+
+    /// <summary>
+    /// Gets or sets the API key for Azure OpenAI services.
+    /// </summary>
     public string? AzureApiKey { get; set; }
+
+    /// <summary>
+    /// Gets or sets the Azure OpenAI deployment name.
+    /// </summary>
     public string? AzureDeployment { get; set; }
 }
 
+/// <summary>
+/// Defines the contract for an AI-based filter service that converts natural language prompts into structured filter plans.
+/// </summary>
 public interface IAiFilterService
 {
+    /// <summary>
+    /// Creates a filter plan based on a natural language prompt.
+    /// </summary>
+    /// <param name="naturalLanguagePrompt">
+    /// The user-provided prompt in plain English describing the filter criteria (e.g., "Show employees with rating ≥ 8 and salary > 5000").
+    /// </param>
+
     Task<FilterPlan?> CreateFilterPlanAsync(string naturalLanguagePrompt);
 }
 
+/// <summary>
+/// Provides AI-powered natural language filtering capabilities for a .NET MAUI DataGrid.
+/// Converts user prompts into structured <see cref="FilterPlan"/> objects using OpenAI, Azure OpenAI, or local parsing.
+/// </summary>
 public class AiFilterService : IAiFilterService
 {
     private readonly AiSettings _settings;
+
+    /// <summary>
+    /// JSON serializer options for deserializing AI responses into <see cref="FilterPlan"/>.
+    /// </summary>
     private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
     {
         PropertyNameCaseInsensitive = true,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
+    /// <summary>
+    /// Schema definition and instructions provided to AI models for generating valid filter plans.
+    /// </summary>
     private const string SchemaText = """
 Fields and types:
 - EmployeeId: integer
@@ -64,8 +127,18 @@ Return ONLY a compact JSON object that matches this C# schema:
 }
 """;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AiFilterService"/> class with the specified AI settings.
+    /// </summary>
+    /// <param name="settings">The AI configuration settings.</param>
     public AiFilterService(AiSettings settings) => _settings = settings;
 
+    /// <summary>
+    /// Creates a filter plan from a natural language prompt using the configured AI provider.
+    /// </summary>
+    /// <param name="naturalLanguagePrompt">
+    /// The user-provided prompt in plain English (e.g., "Show female employees with rating ≥ 8 and salary > 5000").
+    /// </param>
     public async Task<FilterPlan?> CreateFilterPlanAsync(string naturalLanguagePrompt)
     {
         if (string.IsNullOrWhiteSpace(naturalLanguagePrompt)) return null;
@@ -100,7 +173,10 @@ Return ONLY a compact JSON object that matches this C# schema:
         }
     }
 
-    // ---- Simple local parser for common phrasing (offline) ----
+
+    /// <summary>
+    /// Provides a mapping of common field aliases to their canonical names for filter parsing.
+    /// </summary>
     private static readonly Dictionary<string, string> FieldAliases = new(StringComparer.OrdinalIgnoreCase)
 {
     { "employeeid", "EmployeeId" }, { "id", "EmployeeId" },
@@ -111,6 +187,12 @@ Return ONLY a compact JSON object that matches this C# schema:
     { "salary", "Salary" },
 };
 
+    /// <summary>
+    /// Creates a <see cref="FilterPlan"/> from a natural language prompt using local regex-based parsing.
+    /// </summary>
+    /// <param name="prompt">
+    /// A natural language query describing filter conditions (e.g., "show female employees with rating ≥ 8 and salary > 5000").
+    /// </param>
     private static FilterPlan? CreateLocalPlan(string prompt)
     {
         var p = prompt.Trim();
@@ -144,7 +226,6 @@ Return ONLY a compact JSON object that matches this C# schema:
             {
                 field = mapped; return true;
             }
-            // allow exact schema
             var s = raw.Trim();
             if (FieldAliases.Values.Contains(s, StringComparer.OrdinalIgnoreCase))
             {
@@ -247,19 +328,17 @@ Return ONLY a compact JSON object that matches this C# schema:
         return plan.conditions.Count > 0 ? plan : null;
     }
 
-    private static bool TryField(string raw, out string field)
-    {
-        if (FieldAliases.TryGetValue(raw.Trim(), out var mapped))
-        {
-            field = mapped;
-            return true;
-        }
-        field = raw.Trim();
-        // Accept exact schema names too
-        return FieldAliases.Values.Contains(field, StringComparer.OrdinalIgnoreCase);
-    }
 
-    // ---- OpenAI REST ----
+
+    /// <summary>
+    /// Calls the OpenAI Chat Completions API to generate a JSON-based filter plan from natural language input.
+    /// </summary>
+    /// <param name="system">
+    /// The system instruction that defines schema, constraints, and expected JSON output format.
+    /// </param>
+    /// <param name="user">
+    /// The user's natural language prompt describing filter conditions.
+    /// </param>
     private async Task<string?> CallOpenAiAsync(string system, string user)
     {
         if (string.IsNullOrWhiteSpace(_settings.OpenAiApiKey))
@@ -275,8 +354,8 @@ Return ONLY a compact JSON object that matches this C# schema:
             response_format = new { type = "json_object" },
             messages = new object[]
             {
-                new { role = "system", content = system },
-                new { role = "user", content = user }
+            new { role = "system", content = system },
+            new { role = "user", content = user }
             }
         };
 
@@ -289,7 +368,15 @@ Return ONLY a compact JSON object that matches this C# schema:
         return doc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
     }
 
-    // ---- Azure OpenAI REST ----
+    /// <summary>
+    /// Calls the Azure OpenAI Chat Completions API to generate a JSON-based filter plan from natural language input.
+    /// </summary>
+    /// <param name="system">
+    /// The system instruction that defines schema, constraints, and expected JSON output format.
+    /// </param>
+    /// <param name="user">
+    /// The user's natural language prompt describing filter conditions.
+    /// </param>
     private async Task<string?> CallAzureOpenAiAsync(string system, string user)
     {
         if (string.IsNullOrWhiteSpace(_settings.AzureEndpoint) ||
@@ -308,8 +395,8 @@ Return ONLY a compact JSON object that matches this C# schema:
             response_format = new { type = "json_object" },
             messages = new object[]
             {
-                new { role = "system", content = system },
-                new { role = "user", content = user }
+            new { role = "system", content = system },
+            new { role = "user", content = user }
             }
         };
 
@@ -318,4 +405,5 @@ Return ONLY a compact JSON object that matches this C# schema:
         using var doc = JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
         return doc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
     }
+
 }
