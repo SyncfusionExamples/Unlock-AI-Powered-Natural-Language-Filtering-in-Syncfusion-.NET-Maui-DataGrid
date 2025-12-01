@@ -23,6 +23,20 @@ Traditional filtering requires users to know column names and conditions. Natura
 *   ✅ Leverages AI to interpret intent
 
 ***
+## Designing the UI
+Use Syncfusion controls:
+- **SfComboBox** for prompt input
+- **SfButton** for Execute and Reset actions
+- **SfDataGrid** for displaying filtered data
+
+***
+
+## Resources
+- [Syncfusion .NET MAUI DataGrid](https://www.syncfusion.com/maui-controls/maui-datagrid)
+- [OpenAI API](https://platform.openai.com/docs/)
+- [GitHub Repository](https://github.com/SyncfusionExamples/AI-driven-Natural-Language-Filtering-in-.NET-MAUI-DataGrid/tree/master)
+
+***
 
 ### How It Works
 - **SfComboBox**: Allows users to enter natural language prompts or select suggestions.
