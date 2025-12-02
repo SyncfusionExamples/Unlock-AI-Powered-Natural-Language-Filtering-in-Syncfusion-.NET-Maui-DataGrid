@@ -101,31 +101,31 @@ public class AiFilterService : IAiFilterService
     /// Schema definition and instructions provided to AI models for generating valid filter plans.
     /// </summary>
     private const string SchemaText = """
-Fields and types:
-- EmployeeId: integer
-- Name: string
-- Title: string
-- Rating: integer
-- BirthDate: date (MM/dd/yyyy)
-- Gender: string (Male|Female)
-- Salary: decimal (USD)
-
-Allowed operators per field:
-- integers/decimal/date: eq, ne, gt, gte, lt, lte, between, before, after
-- string: eq, ne, contains, startsWith, endsWith, in
-
-Combine conditions with "and" or "or".
-
-Return ONLY a compact JSON object that matches this C# schema:
-{
-  "logic":"and|or",
-  "conditions":[
-    { "condition":{ "field":"", "op":"", "value":"", "values":[] } }
-    or
-    { "group": { ... } }
-  ]
-}
-""";
+            Fields and types:
+            - EmployeeId: integer
+            - Name: string
+            - Title: string
+            - Rating: integer
+            - BirthDate: date (MM/dd/yyyy)
+            - Gender: string (Male|Female)
+            - Salary: decimal (USD)
+            
+            Allowed operators per field:
+            - integers/decimal/date: eq, ne, gt, gte, lt, lte, between, before, after
+            - string: eq, ne, contains, startsWith, endsWith, in
+            
+            Combine conditions with "and" or "or".
+            
+            Return ONLY a compact JSON object that matches this C# schema:
+            {
+              "logic":"and|or",
+              "conditions":[
+                { "condition":{ "field":"", "op":"", "value":"", "values":[] } }
+                or
+                { "group": { ... } }
+              ]
+            }
+            """;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AiFilterService"/> class with the specified AI settings.
@@ -178,14 +178,14 @@ Return ONLY a compact JSON object that matches this C# schema:
     /// Provides a mapping of common field aliases to their canonical names for filter parsing.
     /// </summary>
     private static readonly Dictionary<string, string> FieldAliases = new(StringComparer.OrdinalIgnoreCase)
-{
-    { "employeeid", "EmployeeId" }, { "id", "EmployeeId" },
-    { "name", "Name" }, { "title", "Title" },
-    { "rating", "Rating" },
-    { "birthdate", "BirthDate" }, { "dob", "BirthDate" },
-    { "gender", "Gender" },
-    { "salary", "Salary" },
-};
+    {
+        { "employeeid", "EmployeeId" }, { "id", "EmployeeId" },
+        { "name", "Name" }, { "title", "Title" },
+        { "rating", "Rating" },
+        { "birthdate", "BirthDate" }, { "dob", "BirthDate" },
+        { "gender", "Gender" },
+        { "salary", "Salary" },
+    };
 
     /// <summary>
     /// Creates a <see cref="FilterPlan"/> from a natural language prompt using local regex-based parsing.
