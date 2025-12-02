@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:sfgrid="clr-namespace:Syncfusion.Maui.DataGrid;assembly=Syncfusion.Maui.DataGrid"
+             xmlns:grid="clr-namespace:Syncfusion.Maui.DataGrid;assembly=Syncfusion.Maui.DataGrid"
              xmlns:input="clr-namespace:Syncfusion.Maui.Inputs;assembly=Syncfusion.Maui.Inputs"
              x:Class="DataGridAIFilteringSample.MainPage">
 
@@ -9,7 +9,7 @@
     <Grid RowDefinitions="Auto, *" Padding="10">
         <Grid.Resources>
             <!-- Style for bold header text -->
-            <Style x:Key="HeaderBoldStyle" TargetType="sfgrid:DataGridHeaderCell">
+            <Style x:Key="HeaderBoldStyle" TargetType="grid:DataGridHeaderCell">
                 <Setter Property="FontAttributes" Value="Bold"/>
             </Style>
         </Grid.Resources>
@@ -31,7 +31,7 @@
                 Command="{Binding ResetCommand}" />
         </Grid>
 
-        <sfgrid:SfDataGrid x:Name="DataGrid"
+        <grid:SfDataGrid x:Name="DataGrid"
                        Grid.Row="1" RowHeight="50"
                        VerticalScrollBarVisibility="Never"
                        GridLinesVisibility="Both"
@@ -39,30 +39,30 @@
                        HeaderGridLinesVisibility="Both"
                        ItemsSource="{Binding Employees}"
                        SortingMode="Multiple">
-            <sfgrid:SfDataGrid.Columns>
-                <sfgrid:DataGridNumericColumn MappingName="EmployeeId" HeaderText="ID" HeaderTextAlignment="Center"
+            <grid:SfDataGrid.Columns>
+                <grid:DataGridNumericColumn MappingName="EmployeeId" HeaderText="ID" HeaderTextAlignment="Center"
                                               CellTextAlignment="Center"
                                           HeaderStyle="{StaticResource HeaderBoldStyle}"/>
-                <sfgrid:DataGridTextColumn MappingName="Name"
+                <grid:DataGridTextColumn MappingName="Name"
                                        HeaderStyle="{StaticResource HeaderBoldStyle}" HeaderTextAlignment="Center"
                                               CellTextAlignment="Center" />
-                <sfgrid:DataGridTextColumn MappingName="Title"
+                <grid:DataGridTextColumn MappingName="Title"
                                        HeaderStyle="{StaticResource HeaderBoldStyle}" HeaderTextAlignment="Center"
                                               CellTextAlignment="Center" />
-                <sfgrid:DataGridNumericColumn MappingName="Rating"
+                <grid:DataGridNumericColumn MappingName="Rating"
                                           HeaderStyle="{StaticResource HeaderBoldStyle}" HeaderTextAlignment="Center"
                                               CellTextAlignment="Center"/>
-                <sfgrid:DataGridDateColumn MappingName="BirthDate" Format="d"
+                <grid:DataGridDateColumn MappingName="BirthDate" Format="d"
                                        HeaderStyle="{StaticResource HeaderBoldStyle}" HeaderTextAlignment="Center"
                                               CellTextAlignment="Center"/>
-                <sfgrid:DataGridTextColumn MappingName="Gender"
+                <grid:DataGridTextColumn MappingName="Gender"
                                        HeaderStyle="{StaticResource HeaderBoldStyle}" HeaderTextAlignment="Center"
                                               CellTextAlignment="Center" />
-                <sfgrid:DataGridNumericColumn MappingName="Salary" Format="$#,0.00" HeaderTextAlignment="Center"
+                <grid:DataGridNumericColumn MappingName="Salary" Format="$#,0.00" HeaderTextAlignment="Center"
                                               CellTextAlignment="Center"
                                           HeaderStyle="{StaticResource HeaderBoldStyle}" />
-            </sfgrid:SfDataGrid.Columns>
-        </sfgrid:SfDataGrid>
+            </grid:SfDataGrid.Columns>
+        </grid:SfDataGrid>
     </Grid>
 
 </ContentPage>
