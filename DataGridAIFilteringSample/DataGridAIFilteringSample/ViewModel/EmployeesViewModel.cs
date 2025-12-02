@@ -5,7 +5,6 @@ using System.Windows.Input;
 
 namespace DataGridAIFilteringSample
 {
-
     /// <summary>
     /// ViewModel for managing employees and applying AI-powered or local filtering in a .NET MAUI DataGrid.
     /// Implements MVVM pattern with data binding, commands, and filter logic.
@@ -35,15 +34,15 @@ namespace DataGridAIFilteringSample
         /// Gets a collection of predefined prompt suggestions for quick filtering.
         /// </summary>
         public ObservableCollection<string> PromptSuggestions { get; } = new()
-    {
-        "Employees with rating >= 8 and salary > 5000",
-        "Show only Female employees born before 1990",
-        "Name contains 'Tom' or Title contains 'Supervisor'",
-        "BirthDate between 01/01/1980 and 12/31/1989",
-        "Salary between 3000 and 4000",
-        "Gender in [Male, Female] and Rating > 5",
-        "EmployeeId between 1005 and 1015"
-    };
+        {
+            "Employees with rating >= 8 and salary > 5000",
+            "Show only Female employees born before 1990",
+            "Name contains 'Tom' or Title contains 'Supervisor'",
+            "BirthDate between 01/01/1980 and 12/31/1989",
+            "Salary between 3000 and 4000",
+            "Gender in [Male, Female] and Rating > 5",
+            "EmployeeId between 1005 and 1015"
+        };
 
         private string? _selectedSuggestion;
 
@@ -164,7 +163,6 @@ namespace DataGridAIFilteringSample
             }
             return result;
         }
-
 
         /// <summary>
         /// Evaluates a single filter condition against an <see cref="Employee"/> record.

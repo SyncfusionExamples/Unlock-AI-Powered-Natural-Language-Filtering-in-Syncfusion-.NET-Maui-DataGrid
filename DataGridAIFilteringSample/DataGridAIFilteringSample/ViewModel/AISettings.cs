@@ -101,31 +101,31 @@ public class AiFilterService : IAiFilterService
     /// Schema definition and instructions provided to AI models for generating valid filter plans.
     /// </summary>
     private const string SchemaText = """
-Fields and types:
-- EmployeeId: integer
-- Name: string
-- Title: string
-- Rating: integer
-- BirthDate: date (MM/dd/yyyy)
-- Gender: string (Male|Female)
-- Salary: decimal (USD)
+        Fields and types:
+        - EmployeeId: integer
+        - Name: string
+        - Title: string
+        - Rating: integer
+        - BirthDate: date (MM/dd/yyyy)
+        - Gender: string (Male|Female)
+        - Salary: decimal (USD)
 
-Allowed operators per field:
-- integers/decimal/date: eq, ne, gt, gte, lt, lte, between, before, after
-- string: eq, ne, contains, startsWith, endsWith, in
+        Allowed operators per field:
+        - integers/decimal/date: eq, ne, gt, gte, lt, lte, between, before, after
+        - string: eq, ne, contains, startsWith, endsWith, in
 
-Combine conditions with "and" or "or".
+        Combine conditions with "and" or "or".
 
-Return ONLY a compact JSON object that matches this C# schema:
-{
-  "logic":"and|or",
-  "conditions":[
-    { "condition":{ "field":"", "op":"", "value":"", "values":[] } }
-    or
-    { "group": { ... } }
-  ]
-}
-""";
+        Return ONLY a compact JSON object that matches this C# schema:
+        {
+          "logic":"and|or",
+          "conditions":[
+            { "condition":{ "field":"", "op":"", "value":"", "values":[] } }
+            or
+            { "group": { ... } }
+          ]
+        }
+        """;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AiFilterService"/> class with the specified AI settings.
@@ -173,19 +173,18 @@ Return ONLY a compact JSON object that matches this C# schema:
         }
     }
 
-
     /// <summary>
     /// Provides a mapping of common field aliases to their canonical names for filter parsing.
     /// </summary>
     private static readonly Dictionary<string, string> FieldAliases = new(StringComparer.OrdinalIgnoreCase)
-{
-    { "employeeid", "EmployeeId" }, { "id", "EmployeeId" },
-    { "name", "Name" }, { "title", "Title" },
-    { "rating", "Rating" },
-    { "birthdate", "BirthDate" }, { "dob", "BirthDate" },
-    { "gender", "Gender" },
-    { "salary", "Salary" },
-};
+    {
+        { "employeeid", "EmployeeId" }, { "id", "EmployeeId" },
+        { "name", "Name" }, { "title", "Title" },
+        { "rating", "Rating" },
+        { "birthdate", "BirthDate" }, { "dob", "BirthDate" },
+        { "gender", "Gender" },
+        { "salary", "Salary" },
+    };
 
     /// <summary>
     /// Creates a <see cref="FilterPlan"/> from a natural language prompt using local regex-based parsing.
@@ -328,8 +327,6 @@ Return ONLY a compact JSON object that matches this C# schema:
         return plan.conditions.Count > 0 ? plan : null;
     }
 
-
-
     /// <summary>
     /// Calls the OpenAI Chat Completions API to generate a JSON-based filter plan from natural language input.
     /// </summary>
@@ -405,5 +402,4 @@ Return ONLY a compact JSON object that matches this C# schema:
         using var doc = JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
         return doc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
     }
-
 }

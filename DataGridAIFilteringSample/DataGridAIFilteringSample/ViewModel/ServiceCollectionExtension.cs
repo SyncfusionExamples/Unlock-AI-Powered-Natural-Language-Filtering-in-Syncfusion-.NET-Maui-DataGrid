@@ -18,7 +18,7 @@ public static class ServiceCollectionExtensions
         {
             Provider = AiProvider.OpenAI,
             OpenAiApiKey = openAiKey,
-            OpenAiModel = "gpt-4o-mini"
+            OpenAiModel = " " // your model
         });
 
         services.AddSingleton<IAiFilterService, AiFilterService>();
