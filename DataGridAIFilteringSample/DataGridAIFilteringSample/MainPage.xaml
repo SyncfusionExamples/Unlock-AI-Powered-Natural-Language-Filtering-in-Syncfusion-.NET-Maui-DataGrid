@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:sfgrid="clr-namespace:Syncfusion.Maui.DataGrid;assembly=Syncfusion.Maui.DataGrid"
+             xmlns:grid="clr-namespace:Syncfusion.Maui.DataGrid;assembly=Syncfusion.Maui.DataGrid"
              xmlns:input="clr-namespace:Syncfusion.Maui.Inputs;assembly=Syncfusion.Maui.Inputs"
              x:Class="DataGridAIFilteringSample.MainPage">
 
@@ -38,7 +38,7 @@
                            SortingMode="Multiple">
             <sfgrid:SfDataGrid.Columns>
                 <sfgrid:DataGridNumericColumn MappingName="EmployeeId" HeaderText="ID" HeaderTextAlignment="Center"
-                                              CellTextAlignment="Center" Format="N0"
+                                              CellTextAlignment="Center" Format="0"
                                               HeaderStyle="{StaticResource HeaderBoldStyle}"/>
                 <sfgrid:DataGridTextColumn MappingName="Name"
                                            HeaderStyle="{StaticResource HeaderBoldStyle}" HeaderTextAlignment="Center"
