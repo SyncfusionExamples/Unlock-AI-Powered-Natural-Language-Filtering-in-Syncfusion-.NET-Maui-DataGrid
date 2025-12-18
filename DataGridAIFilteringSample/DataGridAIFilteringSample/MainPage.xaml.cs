@@ -11,11 +11,11 @@ namespace DataGridAIFilteringSample
             InitializeComponent();
             var aiService = new AiFilterService();
             viewModel = new EmployeesViewModel(aiService);
-            BindingContext = viewModel;
-            viewModel.FilterChanged += (_, __) =>
+            BindingContext = viewModel; 
+            viewModel.FilterChanged += (sender, args) =>
             {
-                DataGrid.View?.Filter = viewModel.BuildPredicate();
-                DataGrid.View?.RefreshFilter();
+                DataGrid.View!.Filter = viewModel.BuildPredicate();
+                DataGrid.View.RefreshFilter();
             };
         }
     }
