@@ -5,64 +5,60 @@
              xmlns:input="clr-namespace:Syncfusion.Maui.Inputs;assembly=Syncfusion.Maui.Inputs"
              x:Class="DataGridAIFilteringSample.MainPage">
 
-
     <Grid RowDefinitions="Auto, *" Padding="10">
         <Grid.Resources>
-            <!-- Style for bold header text -->
             <Style x:Key="HeaderBoldStyle" TargetType="sfgrid:DataGridHeaderCell">
                 <Setter Property="FontAttributes" Value="Bold"/>
             </Style>
         </Grid.Resources>
 
         <Grid ColumnDefinitions="*, Auto, Auto" ColumnSpacing="10">
-            <input:SfComboBox
-            x:Name="PromptCombo"
-            ItemsSource="{Binding PromptSuggestions}"
-            SelectedItem="{Binding SelectedSuggestion}"
-            Text="{Binding Prompt, Mode=TwoWay}"
-            IsEditable="True"
-            Placeholder="Ask AI to apply filter to SfDataGrid"
-            MaxDropDownHeight="260"
-            HeightRequest="40" />
+            <input:SfComboBox x:Name="PromptCombo"
+                              ItemsSource="{Binding PromptSuggestions}"
+                              SelectedItem="{Binding SelectedSuggestion}"
+                              Text="{Binding Prompt, Mode=TwoWay}"
+                              IsEditable="True"
+                              Placeholder="Ask AI to apply filter to SfDataGrid"
+                              MaxDropDownHeight="260"
+                              HeightRequest="40" />
 
             <Button Grid.Column="1" Text="Execute Prompt"
-                Command="{Binding ExecutePromptCommand}" />
+                    Command="{Binding ExecutePromptCommand}" />
             <Button Grid.Column="2" Text="Reset"
-                Command="{Binding ResetCommand}" />
+                    Command="{Binding ResetCommand}" />
         </Grid>
 
         <sfgrid:SfDataGrid x:Name="DataGrid"
-                       Grid.Row="1" RowHeight="50"
-                       VerticalScrollBarVisibility="Never"
-                       GridLinesVisibility="Both"
+                           Grid.Row="1" RowHeight="50"
+                           VerticalScrollBarVisibility="Never"
+                           GridLinesVisibility="Both"
                            ColumnWidthMode="Fill"
-                       HeaderGridLinesVisibility="Both"
-                       ItemsSource="{Binding Employees}"
-                       SortingMode="Multiple">
+                           HeaderGridLinesVisibility="Both"
+                           ItemsSource="{Binding Employees}"
+                           SortingMode="Multiple">
             <sfgrid:SfDataGrid.Columns>
                 <sfgrid:DataGridNumericColumn MappingName="EmployeeId" HeaderText="ID" HeaderTextAlignment="Center"
-                                              CellTextAlignment="Center"
-                                          HeaderStyle="{StaticResource HeaderBoldStyle}"/>
+                                              CellTextAlignment="Center" Format="N0"
+                                              HeaderStyle="{StaticResource HeaderBoldStyle}"/>
                 <sfgrid:DataGridTextColumn MappingName="Name"
-                                       HeaderStyle="{StaticResource HeaderBoldStyle}" HeaderTextAlignment="Center"
-                                              CellTextAlignment="Center" />
+                                           HeaderStyle="{StaticResource HeaderBoldStyle}" HeaderTextAlignment="Center"
+                                           CellTextAlignment="Center" />
                 <sfgrid:DataGridTextColumn MappingName="Title"
-                                       HeaderStyle="{StaticResource HeaderBoldStyle}" HeaderTextAlignment="Center"
-                                              CellTextAlignment="Center" />
-                <sfgrid:DataGridNumericColumn MappingName="Rating"
-                                          HeaderStyle="{StaticResource HeaderBoldStyle}" HeaderTextAlignment="Center"
+                                           HeaderStyle="{StaticResource HeaderBoldStyle}" HeaderTextAlignment="Center"
+                                           CellTextAlignment="Center" />
+                <sfgrid:DataGridNumericColumn MappingName="Rating" Format="N0"
+                                              HeaderStyle="{StaticResource HeaderBoldStyle}" HeaderTextAlignment="Center"
                                               CellTextAlignment="Center"/>
                 <sfgrid:DataGridDateColumn MappingName="BirthDate" Format="d"
-                                       HeaderStyle="{StaticResource HeaderBoldStyle}" HeaderTextAlignment="Center"
-                                              CellTextAlignment="Center"/>
+                                           HeaderStyle="{StaticResource HeaderBoldStyle}" HeaderTextAlignment="Center"
+                                           CellTextAlignment="Center"/>
                 <sfgrid:DataGridTextColumn MappingName="Gender"
-                                       HeaderStyle="{StaticResource HeaderBoldStyle}" HeaderTextAlignment="Center"
-                                              CellTextAlignment="Center" />
-                <sfgrid:DataGridNumericColumn MappingName="Salary" Format="$#,0.00" HeaderTextAlignment="Center"
-                                              CellTextAlignment="Center"
-                                          HeaderStyle="{StaticResource HeaderBoldStyle}" />
+                                           HeaderStyle="{StaticResource HeaderBoldStyle}" HeaderTextAlignment="Center"
+                                           CellTextAlignment="Center" />
+                <sfgrid:DataGridNumericColumn MappingName="Salary"  HeaderTextAlignment="Center"
+                                              CellTextAlignment="Center" Format="N0"
+                                              HeaderStyle="{StaticResource HeaderBoldStyle}" />
             </sfgrid:SfDataGrid.Columns>
         </sfgrid:SfDataGrid>
     </Grid>
-
 </ContentPage>

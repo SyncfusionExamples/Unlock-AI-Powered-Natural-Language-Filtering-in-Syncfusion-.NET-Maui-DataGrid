@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DataGridAIFilteringSample.ViewModel;
+using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Input;
@@ -90,9 +91,7 @@ namespace DataGridAIFilteringSample
         public EmployeesViewModel(IAiFilterService ai)
         {
             _ai = ai;
-
             ExecutePromptCommand = new Command(async () => await ExecuteAsync());
-
             ResetCommand = new Command(() =>
             {
                 CurrentPlan = null;
@@ -136,13 +135,12 @@ namespace DataGridAIFilteringSample
         /// Evaluates a filter plan against a single employee record.
         /// </summary>
         /// <param name="plan">The filter plan to evaluate.</param>
-        /// <param name="e">The employee record.</param>
-        /// <returns><c>true</c> if the employee matches the filter; otherwise, <c>false</c>.</returns>
-        private static bool EvalPlan(FilterPlan plan, Employee e)
+        /// <param name="employee">The employee record.</param>
+        /// <returns><condition>true</condition> if the employee matches the filter; otherwise, <condition>false</condition>.</returns>
+        private static bool EvalPlan(FilterPlan plan, Employee employee)
         {
             bool Combine(bool a, bool b, string logic) =>
                 logic.Equals("or", StringComparison.OrdinalIgnoreCase) ? a || b : a && b;
-
             bool result = false;
             bool first = true;
 
@@ -151,44 +149,45 @@ namespace DataGridAIFilteringSample
                 bool local = false;
                 if (node.group != null)
                 {
-                    local = EvalPlan(node.group, e);
+                    local = EvalPlan(node.group, employee);
                 }
                 else if (node.condition != null)
                 {
-                    local = EvalCondition(node.condition, e);
+                    local = EvalCondition(node.condition, employee);
                 }
 
                 result = first ? local : Combine(result, local, plan.logic);
                 first = false;
             }
+
             return result;
         }
 
         /// <summary>
         /// Evaluates a single filter condition against an <see cref="Employee"/> record.
         /// </summary>
-        /// <param name="c">
+        /// <param name="condition">
         /// The condition to evaluate, including field name, operator, and value(s).
         /// </param>
-        /// <param name="e">
+        /// <param name="employee">
         /// The employee record to test against the condition.
         /// </param>
-        private static bool EvalCondition(Condition c, Employee e)
+        private static bool EvalCondition(Condition condition, Employee employee)
         {
-            string op = c.op.ToLowerInvariant();
-            object? lhs = c.field switch
+            string op = condition.op.ToLowerInvariant();
+            object? lhs = condition.field switch
             {
-                "EmployeeId" => e.EmployeeId,
-                "Name" => e.Name,
-                "Title" => e.Title,
-                "Rating" => e.Rating,
-                "BirthDate" => e.BirthDate,
-                "Gender" => e.Gender,
-                "Salary" => e.Salary,
+                "EmployeeId" => employee.EmployeeId,
+                "Name" => employee.Name,
+                "Title" => employee.Title,
+                "Rating" => employee.Rating,
+                "BirthDate" => employee.BirthDate,
+                "Gender" => employee.Gender,
+                "Salary" => employee.Salary,
                 _ => null
             };
-            if (lhs is null) return false;
 
+            if (lhs is null) return false;
             (string? s, decimal? dec, int? i, DateTime? dt) Parse(string? v)
             {
                 if (v is null) return (null, null, null, null);
@@ -201,9 +200,7 @@ namespace DataGridAIFilteringSample
             bool StrCmp(Func<string, bool> pred) => lhs is string ss && pred(ss);
             bool NumCmp(Func<decimal, bool> pred) => (lhs is int ii && pred(ii)) || (lhs is decimal dd && pred(dd));
             bool DateCmp(Func<DateTime, bool> pred) => lhs is DateTime d && pred(d);
-
-            var (sv, dv, iv, dtv) = Parse(c.value);
-
+            var (sv, dv, iv, dtv) = Parse(condition.value);
             return op switch
             {
                 "eq" => lhs switch
@@ -229,16 +226,16 @@ namespace DataGridAIFilteringSample
                 "contains" => StrCmp(x => x.Contains(sv ?? "", StringComparison.OrdinalIgnoreCase)),
                 "startswith" => StrCmp(x => x.StartsWith(sv ?? "", StringComparison.OrdinalIgnoreCase)),
                 "endswith" => StrCmp(x => x.EndsWith(sv ?? "", StringComparison.OrdinalIgnoreCase)),
-                "between" => (c.values?.Count ?? 0) >= 2 && (
-                    lhs is DateTime d && DateTime.TryParse(c.values![0], out var d1) && DateTime.TryParse(c.values![1], out var d2) && d >= d1 && d <= d2 ||
-                    lhs is int ii && int.TryParse(c.values![0], out var i1) && int.TryParse(c.values![1], out var i2) && ii >= i1 && ii <= i2 ||
-                    lhs is decimal dd && decimal.TryParse(c.values![0], out var m1) && decimal.TryParse(c.values![1], out var m2) && dd >= m1 && dd <= m2
+                "between" => (condition.values?.Count ?? 0) >= 2 && (
+                    lhs is DateTime d && DateTime.TryParse(condition.values![0], out var d1) && DateTime.TryParse(condition.values![1], out var d2) && d >= d1 && d <= d2 ||
+                    lhs is int ii && int.TryParse(condition.values![0], out var i1) && int.TryParse(condition.values![1], out var i2) && ii >= i1 && ii <= i2 ||
+                    lhs is decimal dd && decimal.TryParse(condition.values![0], out var m1) && decimal.TryParse(condition.values![1], out var m2) && dd >= m1 && dd <= m2
                 ),
-                "in" => c.values != null && (lhs switch
+                "in" => condition.values != null && (lhs switch
                 {
-                    string ss => c.values.Any(v => string.Equals(v, ss, StringComparison.OrdinalIgnoreCase)),
-                    int ii => c.values.Any(v => int.TryParse(v, out var x) && x == ii),
-                    decimal dd => c.values.Any(v => decimal.TryParse(v, out var x) && x == dd),
+                    string ss => condition.values.Any(v => string.Equals(v, ss, StringComparison.OrdinalIgnoreCase)),
+                    int ii => condition.values.Any(v => int.TryParse(v, out var x) && x == ii),
+                    decimal dd => condition.values.Any(v => decimal.TryParse(v, out var x) && x == dd),
                     _ => false
                 }),
                 _ => false

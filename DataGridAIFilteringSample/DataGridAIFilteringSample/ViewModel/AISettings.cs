@@ -1,69 +1,11 @@
-﻿using System.Net.Http;
-using System.Net.Http.Headers;
+using System;
+using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Text.RegularExpressions;
+using JsonElement = System.Text.Json.JsonElement;
 
-namespace DataGridAIFilteringSample;
-
-
-/// <summary>
-/// Specifies the AI provider options available for integration.
-/// </summary>
-public enum AiProvider
-{
-    /// <summary>
-    /// Use OpenAI as the AI provider.
-    /// </summary>
-    OpenAI,
-
-    /// <summary>
-    /// Use Azure OpenAI as the AI provider.
-    /// </summary>
-    AzureOpenAI,
-
-    /// <summary>
-    /// Use a local AI implementation.
-    /// </summary>
-    Local
-}
-
-/// <summary>
-/// Represents configuration settings for AI integration in the application.
-/// </summary>
-public class AiSettings
-{
-    /// <summary>
-    /// Gets or sets the AI provider to use (OpenAI, AzureOpenAI, or Local).
-    /// </summary>
-    public AiProvider Provider { get; set; } = AiProvider.Local;
-
-    /// <summary>
-    /// Gets or sets the API key for OpenAI services.
-    /// </summary>
-    public string? OpenAiApiKey { get; set; }
-
-    /// <summary>
-    /// Gets or sets the OpenAI model name (e.g., gpt-4o-mini).
-    /// </summary>
-    public string OpenAiModel { get; set; } = "gpt-4o-mini";
-
-    /// <summary>
-    /// Gets or sets the Azure OpenAI endpoint URL.
-    /// </summary>
-    public string? AzureEndpoint { get; set; }
-
-    /// <summary>
-    /// Gets or sets the API key for Azure OpenAI services.
-    /// </summary>
-    public string? AzureApiKey { get; set; }
-
-    /// <summary>
-    /// Gets or sets the Azure OpenAI deployment name.
-    /// </summary>
-    public string? AzureDeployment { get; set; }
-}
+namespace DataGridAIFilteringSample.ViewModel;
 
 /// <summary>
 /// Defines the contract for an AI-based filter service that converts natural language prompts into structured filter plans.
@@ -76,18 +18,15 @@ public interface IAiFilterService
     /// <param name="naturalLanguagePrompt">
     /// The user-provided prompt in plain English describing the filter criteria (e.g., "Show employees with rating ≥ 8 and salary > 5000").
     /// </param>
-
     Task<FilterPlan?> CreateFilterPlanAsync(string naturalLanguagePrompt);
 }
 
 /// <summary>
 /// Provides AI-powered natural language filtering capabilities for a .NET MAUI DataGrid.
-/// Converts user prompts into structured <see cref="FilterPlan"/> objects using OpenAI, Azure OpenAI, or local parsing.
+/// Converts user prompts into structured <see cref="FilterPlan"/> objects using Azure OpenAI only (local parsing removed).
 /// </summary>
 public class AiFilterService : IAiFilterService
 {
-    private readonly AiSettings _settings;
-
     /// <summary>
     /// JSON serializer options for deserializing AI responses into <see cref="FilterPlan"/>.
     /// </summary>
@@ -128,10 +67,9 @@ public class AiFilterService : IAiFilterService
         """;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="AiFilterService"/> class with the specified AI settings.
+    /// Initializes a new instance of the <see cref="AiFilterService"/> class.
     /// </summary>
-    /// <param name="settings">The AI configuration settings.</param>
-    public AiFilterService(AiSettings settings) => _settings = settings;
+    public AiFilterService() { }
 
     /// <summary>
     /// Creates a filter plan from a natural language prompt using the configured AI provider.
@@ -143,29 +81,68 @@ public class AiFilterService : IAiFilterService
     {
         if (string.IsNullOrWhiteSpace(naturalLanguagePrompt)) return null;
 
-        // Choose best available route
-        var useLocal =
-            _settings.Provider == AiProvider.Local ||
-            (_settings.Provider == AiProvider.OpenAI && string.IsNullOrWhiteSpace(_settings.OpenAiApiKey)) ||
-            (_settings.Provider == AiProvider.AzureOpenAI &&
-                (string.IsNullOrWhiteSpace(_settings.AzureEndpoint) ||
-                 string.IsNullOrWhiteSpace(_settings.AzureApiKey) ||
-                 string.IsNullOrWhiteSpace(_settings.AzureDeployment)));
-
-        if (useLocal)
-            return CreateLocalPlan(naturalLanguagePrompt);
+        if (string.IsNullOrWhiteSpace(AzureBaseService.Endpoint) ||
+            string.IsNullOrWhiteSpace(AzureBaseService.DeploymentName) ||
+            string.IsNullOrWhiteSpace(AzureBaseService.Key))
+        {
+            return null;
+        }
 
         var system = "You convert plain English filters into strictly valid JSON filter plans for a data grid.";
         var user = $"Grid schema:\n{SchemaText}\n\nUser query:\n{naturalLanguagePrompt}\n\nReturn JSON only.";
 
         try
         {
-            var content = _settings.Provider == AiProvider.OpenAI
-                ? await CallOpenAiAsync(system, user)
-                : await CallAzureOpenAiAsync(system, user);
+            var content = await CallAzureAsync(system, user);
+            var json = ExtractJsonObject(content);
+            if (string.IsNullOrWhiteSpace(json)) return null;
+            return ParseFilterPlanFromJson(json);
+        }
+        catch
+        {
+            return null;
+        }
+    }
 
-            if (string.IsNullOrWhiteSpace(content)) return null;
-            return JsonSerializer.Deserialize<FilterPlan>(content, _jsonOptions);
+
+    /// <summary>
+    /// Extracts a JSON object string from a text response.
+    /// </summary>
+    /// <param name="content"></param>
+    /// <returns></returns>
+
+    private static string? ExtractJsonObject(string? content)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return null;
+        var s = content.Trim();
+        // Strip code fences if present
+        if (s.StartsWith("```"))
+        {
+            s = s.Replace("```json", string.Empty, StringComparison.OrdinalIgnoreCase)
+                 .Replace("```", string.Empty)
+                 .Trim();
+        }
+        // Extract the first valid JSON object from the text
+        var start = s.IndexOf('{');
+        var end = s.LastIndexOf('}');
+        if (start >= 0 && end >= start)
+        {
+            return s.Substring(start, end - start + 1).Trim();
+        }
+        return s;
+    }
+
+    /// <summary>
+    /// This method validates the JSON structure and delegates detailed parsing to <see cref="ParsePlanElement"/>.
+    /// </summary>
+    /// <param name="json"></param>
+    /// <returns></returns>
+    private static FilterPlan? ParseFilterPlanFromJson(string json)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            return ParsePlanElement(doc.RootElement);
         }
         catch
         {
@@ -174,232 +151,108 @@ public class AiFilterService : IAiFilterService
     }
 
     /// <summary>
-    /// Provides a mapping of common field aliases to their canonical names for filter parsing.
+    /// Parses a JSON element that represents a filter plan and converts it into a <see cref="FilterPlan"/>.
     /// </summary>
-    private static readonly Dictionary<string, string> FieldAliases = new(StringComparer.OrdinalIgnoreCase)
+    /// <param name="el"></param>
+    /// <returns></returns>
+    private static FilterPlan? ParsePlanElement(JsonElement el)
     {
-        { "employeeid", "EmployeeId" }, { "id", "EmployeeId" },
-        { "name", "Name" }, { "title", "Title" },
-        { "rating", "Rating" },
-        { "birthdate", "BirthDate" }, { "dob", "BirthDate" },
-        { "gender", "Gender" },
-        { "salary", "Salary" },
-    };
-
-    /// <summary>
-    /// Creates a <see cref="FilterPlan"/> from a natural language prompt using local regex-based parsing.
-    /// </summary>
-    /// <param name="prompt">
-    /// A natural language query describing filter conditions (e.g., "show female employees with rating ≥ 8 and salary > 5000").
-    /// </param>
-    private static FilterPlan? CreateLocalPlan(string prompt)
-    {
-        var p = prompt.Trim();
-        if (string.IsNullOrEmpty(p)) return null;
-
-        // logic: prefer "or" only if OR appears and AND does not; else AND
-        var hasOr = Regex.IsMatch(p, @"(?i)\bor\b");
-        var hasAnd = Regex.IsMatch(p, @"(?i)\band\b");
-        var logic = hasOr && !hasAnd ? "or" : "and";
-
+        if (el.ValueKind != JsonValueKind.Object) return null;
+        var logic = el.TryGetProperty("logic", out var lg) && lg.ValueKind == JsonValueKind.String ? lg.GetString() ?? "and" : "and";
         var plan = new FilterPlan { logic = logic, conditions = new List<FilterNode>() };
 
-        // Helper to add a condition
-        void Add(string field, string op, string? value = null, IEnumerable<string>? values = null)
-        {
-            plan.conditions.Add(new FilterNode
-            {
-                condition = new Condition
-                {
-                    field = field,
-                    op = op,
-                    value = value,
-                    values = values?.ToList()
-                }
-            });
-        }
+        if (!el.TryGetProperty("conditions", out var arr) || arr.ValueKind != JsonValueKind.Array)
+            return null;
 
-        static bool TryField(string raw, out string field)
+        foreach (var node in arr.EnumerateArray())
         {
-            if (FieldAliases.TryGetValue(raw.Trim(), out var mapped))
+            // Case 1: wrapper object with "condition"
+            if (node.TryGetProperty("condition", out var cobj))
             {
-                field = mapped; return true;
+                var cond = ParseCondition(cobj);
+                if (cond != null) plan.conditions.Add(new FilterNode { condition = cond });
+                continue;
             }
-            var s = raw.Trim();
-            if (FieldAliases.Values.Contains(s, StringComparer.OrdinalIgnoreCase))
+            // Case 2: wrapper object with "group"
+            if (node.TryGetProperty("group", out var gobj))
             {
-                field = s; return true;
+                var sub = ParsePlanElement(gobj);
+                if (sub != null) plan.conditions.Add(new FilterNode { group = sub });
+                continue;
             }
-            field = s; return false;
-        }
-
-        // 1) between: "<field> between a and b"
-        foreach (Match m in Regex.Matches(p, @"(?i)\b(\w+)\s+between\s+([^\s,]+)\s+and\s+([^\s,]+)"))
-        {
-            if (TryField(m.Groups[1].Value, out var f))
-                Add(f, "between", values: new[] { m.Groups[2].Value, m.Groups[3].Value });
-        }
-
-        // 2) in: "<field> in [a, b]" or "(a, b)"
-        foreach (Match m in Regex.Matches(p, @"(?i)\b(\w+)\s+in\s*[\(\[\{]\s*([^\]\)\}]+)\s*[\]\)\}]"))
-        {
-            if (TryField(m.Groups[1].Value, out var f))
-            {
-                var items = m.Groups[2].Value.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
-                    .Select(x => x.Trim().Trim('\'', '"'));
-                Add(f, "in", values: items);
-            }
-        }
-
-        // 3) contains/starts/ends
-        foreach (Match m in Regex.Matches(p, @"(?i)\b(\w+)\s+contains\s+['""]?(.+?)['""]?(?=\s*(?:and|or|$))"))
-            if (TryField(m.Groups[1].Value, out var f)) Add(f, "contains", m.Groups[2].Value.Trim());
-
-        foreach (Match m in Regex.Matches(p, @"(?i)\b(\w+)\s+starts\s*with\s+['""]?(.+?)['""]?(?=\s*(?:and|or|$))"))
-            if (TryField(m.Groups[1].Value, out var f)) Add(f, "startsWith", m.Groups[2].Value.Trim());
-
-        foreach (Match m in Regex.Matches(p, @"(?i)\b(\w+)\s+ends\s*with\s+['""]?(.+?)['""]?(?=\s*(?:and|or|$))"))
-            if (TryField(m.Groups[1].Value, out var f)) Add(f, "endsWith", m.Groups[2].Value.Trim());
-
-        // 4) before/after (with optional "born")
-        foreach (Match m in Regex.Matches(p, @"(?i)\b(\w+)?\s*(?:born\s+)?before\s+(\d{1,2}/\d{1,2}/\d{2,4}|\d{4})"))
-        {
-            var field = m.Groups[1].Success && TryField(m.Groups[1].Value, out var f1) ? f1 : "BirthDate";
-            var raw = m.Groups[2].Value;
-            var value = Regex.IsMatch(raw, @"^\d{4}$") ? $"01/01/{raw}" : raw;
-            Add(field, "before", value);
-        }
-        foreach (Match m in Regex.Matches(p, @"(?i)\b(\w+)?\s*(?:born\s+)?after\s+(\d{1,2}/\d{1,2}/\d{2,4}|\d{4})"))
-        {
-            var field = m.Groups[1].Success && TryField(m.Groups[1].Value, out var f1) ? f1 : "BirthDate";
-            var raw = m.Groups[2].Value;
-            var value = Regex.IsMatch(raw, @"^\d{4}$") ? $"01/01/{raw}" : raw;
-            Add(field, "after", value);
-        }
-
-        // 5) comparisons: "<field> >= 5", etc.
-        foreach (Match m in Regex.Matches(p, @"(?i)\b(\w+)\s*(>=|<=|>|<|=|==|!=)\s*([^\s,]+)"))
-        {
-            if (!TryField(m.Groups[1].Value, out var f)) continue;
-            var op = m.Groups[2].Value switch
-            {
-                ">=" => "gte",
-                "<=" => "lte",
-                ">" => "gt",
-                "<" => "lt",
-                "=" or "==" => "eq",
-                "!=" => "ne",
-                _ => "eq"
-            };
-            Add(f, op, m.Groups[3].Value);
-        }
-
-        // 6) word comparisons: "rating gte 8"
-        foreach (Match m in Regex.Matches(p, @"(?i)\b(\w+)\s*(gte|lte|gt|lt|eq|ne)\s*([^\s,]+)"))
-            if (TryField(m.Groups[1].Value, out var f))
-                Add(f, m.Groups[2].Value.ToLowerInvariant(), m.Groups[3].Value);
-
-        // 7) gender keywords without explicit "gender": "show only female employees"
-        if (Regex.IsMatch(p, @"(?i)\bfemale\b")) Add("Gender", "eq", "Female");
-        if (Regex.IsMatch(p, @"(?i)\bmale\b")) Add("Gender", "eq", "Male");
-
-        // 8) fallback for simple "Name contains Tom" without quotes
-        foreach (Match m in Regex.Matches(p, @"(?i)\b(name|title)\s+contains?\s+([A-Za-z0-9]+)"))
-            if (TryField(m.Groups[1].Value, out var f)) Add(f, "contains", m.Groups[2].Value);
-
-        // If still nothing matched, try splitting by and/or and parse each chunk with a minimal rule
-        if (plan.conditions.Count == 0)
-        {
-            var parts = Regex.Split(p, @"\s+(?:and|or)\s+", RegexOptions.IgnoreCase)
-                             .Where(s => !string.IsNullOrWhiteSpace(s));
-            foreach (var part in parts)
-            {
-                var s = part.Trim();
-
-                var m1 = Regex.Match(s, @"(?i)\b(name|title)\b\s+(.+)");
-                if (m1.Success && TryField(m1.Groups[1].Value, out var f1))
-                {
-                    Add(f1, "contains", m1.Groups[2].Value.Trim('\'', '"', ' '));
-                }
-            }
+            // Case 3: direct condition fields at top-level
+            var direct = ParseCondition(node);
+            if (direct != null) plan.conditions.Add(new FilterNode { condition = direct });
         }
 
         return plan.conditions.Count > 0 ? plan : null;
     }
 
     /// <summary>
-    /// Calls the OpenAI Chat Completions API to generate a JSON-based filter plan from natural language input.
+    /// Parses a JSON element representing a single filter condition and converts it into a<see cref="Condition"/> object.
     /// </summary>
-    /// <param name="system">
-    /// The system instruction that defines schema, constraints, and expected JSON output format.
-    /// </param>
-    /// <param name="user">
-    /// The user's natural language prompt describing filter conditions.
-    /// </param>
-    private async Task<string?> CallOpenAiAsync(string system, string user)
+    /// <param name="el"></param>
+    /// <returns></returns>
+    private static Condition? ParseCondition(JsonElement el)
     {
-        if (string.IsNullOrWhiteSpace(_settings.OpenAiApiKey))
-            throw new InvalidOperationException("OPENAI_API_KEY is not configured.");
-
-        using var http = new HttpClient { BaseAddress = new Uri("https://api.openai.com/") };
-        http.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _settings.OpenAiApiKey);
-
-        var payload = new
+        if (el.ValueKind != JsonValueKind.Object) return null;
+        string field = el.TryGetProperty("field", out var f) && f.ValueKind == JsonValueKind.String ? f.GetString() ?? string.Empty : string.Empty;
+        string op = el.TryGetProperty("op", out var o) && o.ValueKind == JsonValueKind.String ? o.GetString() ?? string.Empty : string.Empty;
+        string? value = el.TryGetProperty("value", out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;
+        List<string>? values = null;
+        if (el.TryGetProperty("values", out var vs) && vs.ValueKind == JsonValueKind.Array)
         {
-            model = _settings.OpenAiModel,
-            response_format = new { type = "json_object" },
-            messages = new object[]
+            values = new List<string>();
+            foreach (var item in vs.EnumerateArray())
             {
-            new { role = "system", content = system },
-            new { role = "user", content = user }
+                if (item.ValueKind == JsonValueKind.String) values.Add(item.GetString() ?? string.Empty);
+                else values.Add(item.ToString());
             }
-        };
+        }
 
-        var resp = await http.PostAsync(
-            "v1/chat/completions",
-            new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json"));
-
-        resp.EnsureSuccessStatusCode();
-        using var doc = JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
-        return doc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
+        if (string.IsNullOrWhiteSpace(field) || string.IsNullOrWhiteSpace(op)) return null;
+        return new Condition { field = field, op = op, value = value, values = values };
     }
 
     /// <summary>
-    /// Calls the Azure OpenAI Chat Completions API to generate a JSON-based filter plan from natural language input.
+    /// Calls Azure OpenAI Chat Completions to transform a system + user prompt into a response.
+    /// Configured to return strictly JSON (via response_format) for deterministic parsing in AI filtering.
     /// </summary>
-    /// <param name="system">
-    /// The system instruction that defines schema, constraints, and expected JSON output format.
-    /// </param>
-    /// <param name="user">
-    /// The user's natural language prompt describing filter conditions.
-    /// </param>
-    private async Task<string?> CallAzureOpenAiAsync(string system, string user)
+    /// <param name="system"></param>
+    /// <param name="user"></param>
+    /// <returns></returns>
+    private async Task<string?> CallAzureAsync(string system, string user)
     {
-        if (string.IsNullOrWhiteSpace(_settings.AzureEndpoint) ||
-            string.IsNullOrWhiteSpace(_settings.AzureApiKey) ||
-            string.IsNullOrWhiteSpace(_settings.AzureDeployment))
-            throw new InvalidOperationException("Azure OpenAI settings are not configured.");
-
-        using var http = new HttpClient { BaseAddress = new Uri(_settings.AzureEndpoint!.TrimEnd('/') + "/") };
-        http.DefaultRequestHeaders.Add("api-key", _settings.AzureApiKey);
-
-        var apiVersion = "2024-06-01";
-        var url = $"openai/deployments/{_settings.AzureDeployment}/chat/completions?api-version={apiVersion}";
-
-        var payload = new
+        try
         {
-            response_format = new { type = "json_object" },
-            messages = new object[]
-            {
-            new { role = "system", content = system },
-            new { role = "user", content = user }
-            }
-        };
+            using var http = new HttpClient { BaseAddress = new Uri(AzureBaseService.Endpoint.TrimEnd('/') + "/") };
+            http.DefaultRequestHeaders.Add("api-key", AzureBaseService.Key);
 
-        var resp = await http.PostAsync(url, new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json"));
-        resp.EnsureSuccessStatusCode();
-        using var doc = JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
-        return doc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
+            var apiVersion = "2024-06-01";
+            var url = $"openai/deployments/{AzureBaseService.DeploymentName}/chat/completions?api-version={apiVersion}";
+
+            var payload = new
+            {
+                response_format = new { type = "json_object" },
+                temperature = 0,
+                top_p = 0,
+                messages = new object[]
+                {
+                    new { role = "system", content = system },
+                    new { role = "user", content = user }
+                }
+            };
+
+            var resp = await http.PostAsync(url, new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json"));
+            resp.EnsureSuccessStatusCode();
+
+            using var doc = JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
+            var content = doc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
+            return content;
+        }
+        catch
+        {
+            return null;
+        }
     }
 }
