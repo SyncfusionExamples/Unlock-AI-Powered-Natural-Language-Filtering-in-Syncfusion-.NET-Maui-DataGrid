@@ -10,9 +10,9 @@ public static class ServiceCollectionExtensions
     /// </summary>
     /// <param name="services">The service collection to add the AI services to.</param>
     /// <returns>The updated service collection with AI services registered.</returns>
-    public static IServiceCollection AddAiServices(this IServiceCollection services)
+    public static IServiceCollection AddAIServices(this IServiceCollection services)
     {
-        services.AddSingleton<IAiFilterService, AiFilterService>();
+        services.AddSingleton<IAIFilterService, AiFilterService>();
         services.AddSingleton<EmployeesViewModel>();
         services.AddTransient<MainPage>();
         return services;

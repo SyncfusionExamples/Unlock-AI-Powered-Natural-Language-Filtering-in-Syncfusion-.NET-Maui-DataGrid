@@ -12,7 +12,7 @@ namespace DataGridAIFilterSample
     /// </summary>
     public class EmployeesViewModel : BindableObject
     {
-        private readonly IAiFilterService _ai;
+        private readonly IAIFilterService _ai;
 
         /// <summary>
         /// Gets the collection of employees displayed in the DataGrid.
@@ -88,7 +88,7 @@ namespace DataGridAIFilterSample
         /// Initializes a new instance of the <see cref="EmployeesViewModel"/> class.
         /// </summary>
         /// <param name="ai">The AI filter service used to generate filter plans.</param>
-        public EmployeesViewModel(IAiFilterService ai)
+        public EmployeesViewModel(IAIFilterService ai)
         {
             _ai = ai;
             ExecutePromptCommand = new Command(async () => await ExecuteAsync());

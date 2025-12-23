@@ -10,7 +10,7 @@ namespace DataGridAIFilterSample;
 /// <summary>
 /// Defines the contract for an AI-based filter service that converts natural language prompts into structured filter plans.
 /// </summary>
-public interface IAiFilterService
+public interface IAIFilterService
 {
     /// <summary>
     /// Creates a filter plan based on a natural language prompt.
@@ -25,7 +25,7 @@ public interface IAiFilterService
 /// Provides AI-powered natural language filtering capabilities for a .NET MAUI DataGrid.
 /// Converts user prompts into structured <see cref="FilterPlan"/> objects using Azure OpenAI only (local parsing removed).
 /// </summary>
-public class AiFilterService : IAiFilterService
+public class AiFilterService : IAIFilterService
 {
     /// <summary>
     /// JSON serializer options for deserializing AI responses into <see cref="FilterPlan"/>.
