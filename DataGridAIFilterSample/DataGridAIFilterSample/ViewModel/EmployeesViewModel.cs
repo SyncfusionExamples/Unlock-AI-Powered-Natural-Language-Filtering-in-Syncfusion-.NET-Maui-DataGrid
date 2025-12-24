@@ -181,19 +181,13 @@ namespace DataGridAIFilterSample
             string normalizedOperator = (condition.operate ?? string.Empty).Trim().ToLowerInvariant() switch
             {
                 // Equality
-                "eq" => "equals",
                 "equals" => "equals",
-                "ne" => "notEquals",
                 "notequals" => "notEquals",
 
                 // Numeric/date comparisons
-                "gt" => "greaterThan",
                 "greaterthan" => "greaterThan",
-                "gte" => "greaterThanOrEqual",
                 "greaterthanorequal" => "greaterThanOrEqual",
-                "lt" => "lessThan",
                 "lessthan" => "lessThan",
-                "lte" => "lessThanOrEqual",
                 "lessthanorequal" => "lessThanOrEqual",
 
                 // Date helpers
